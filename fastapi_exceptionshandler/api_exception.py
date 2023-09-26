@@ -9,7 +9,7 @@ class APIException(ABC, Exception):
     class ErrorCode(Enum):
         InternalError = "Internal Server Error"
 
-    def __init__(self, error_code: Enum = ErrorCode.InternalError, exc: Exception = None) -> None:
+    def __init__(self, error_code: Enum = ErrorCode.InternalError, exc: Optional[Exception] = None) -> None:
         self._error_code = error_code
         self._exc = exc
 

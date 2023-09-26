@@ -1,33 +1,40 @@
-from fastapi.exceptions import RequestValidationError
-from .api_exception import APIException
-from .api_exception_handler import APIExceptionHandler
+from typing import Callable, List, Optional, Type
+
 from fastapi_routesmanager import RouteManager
-from pydantic import ValidationError
 from starlette.requests import Request
 from starlette.responses import Response
-from typing import Callable, List, Type, Optional
+
+from . import APIExceptionHandler
 
 
 class APIExceptionManager(RouteManager):
-
-    def __init__(self, capture_unhandled: bool = True, capture_validation=False):
+    def __init__(
+        self,
+        capture_unhandled: bool = True,
+        capture_validation: bool = False,
+        logger_name: Optional[str] = None,
+        log_error: bool = True,
+    ):
         self.capture_unhandled = capture_unhandled
         self.capture_validation = capture_validation
+        self.logger_name = logger_name
+        self.log_error = log_error
 
     async def run(
-            self,
-            request: Request,
-            call_next: Callable,
-            remaining_managers: List[Type[RouteManager]],
+        self,
+        request: Request,
+        call_next: Callable,
+        remaining_managers: List[Type[RouteManager]],
     ) -> Optional[Response]:
         try:
-            response: Response = await call_next(request, remaining_managers)
-        except APIException as exc:
-            return await APIExceptionHandler.handled(exc)
+            response = await call_next(request, remaining_managers)
         except Exception as exc:
-            if type(exc) in [RequestValidationError, ValidationError] and not self.capture_validation:
-                raise
-            if not self.capture_unhandled:
-                raise
-            return await APIExceptionHandler.unhandled(exc)
+            return APIExceptionHandler.handle_exception(
+                request,
+                exc,
+                capture_unhandled=self.capture_unhandled,
+                capture_validation=self.capture_validation,
+                logger_name=self.logger_name,
+                log_error=self.log_error,
+            )
         return response

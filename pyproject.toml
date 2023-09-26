@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = 'fastapi_exceptionshandler'
-version = "0.0.1"
+version = "0.0.2"
 license = {text = "MIT License"}
 authors = [
   { name="SirPaulO", email="me@sirpauloliver.com" },
@@ -26,3 +26,35 @@ classifiers = [
 "Homepage" = "https://github.com/SirPaulO/fastapi_exceptionshandler"
 "Bug Tracker" = "https://github.com/SirPaulO/fastapi_exceptionshandler/issues"
 "Repository" = "https://github.com/SirPaulO/fastapi_exceptionshandler.git"
+
+[tool.mypy]
+plugins = ["pydantic.mypy"]
+ignore_missing_imports = true
+disallow_untyped_defs = true
+warn_unused_ignores = true
+no_strict_optional = true
+no_implicit_optional = true
+implicit_reexport = true
+explicit_package_bases = true
+namespace_packages = true
+follow_imports = "silent"
+warn_redundant_casts = true
+check_untyped_defs = true
+no_implicit_reexport = true
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+warn_untyped_fields = true
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+line_length = 120
+
+[tool.black]
+line-length = 120
+target-version = ['py39']
