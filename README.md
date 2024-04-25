@@ -11,55 +11,31 @@ $ pip install fastapi-exceptionshandler
 
 ## Example
 
-You can automatically handle **all** exceptions using [fastapi-routesmanager](https://github.com/SirPaulO/fastapi_routesmanager).
-Simply register the `APIExceptionManager` to the `RouteManagersRegistry`. _Don't forget to use the `ManagedAPIRouter`_
-
-**Note:** by default Validation errors are not captured. To do so, use `APIExceptionManager(capture_validation=True)` instead.
-
 ```python
 from fastapi import FastAPI
 
-from fastapi_routesmanager import RouteManagersRegistry, ManagedAPIRouter
-
-from fastapi_exceptionshandler import APIExceptionManager
-
-RouteManagersRegistry.register_route_manager(APIExceptionManager)  # Register manager
+from fastapi_exceptionshandler import APIExceptionMiddleware
 
 app = FastAPI()
 
-router = ManagedAPIRouter()
+# Register the middleware
+app.add_middleware(APIExceptionMiddleware, capture_unhandled=True)  # Capture all exceptions
 
-@router.get("/")  # Use router instead of app
-def read_root():
-    return 1/0
-
-
-app.include_router(router)  # Include the router to the app
-
-```
-
-<details>
-<summary>Or you can handle exceptions manually...</summary>
-
-```python
-from fastapi import FastAPI
-
+# You can also capture Validation errors, that are not captured by default
 from fastapi_exceptionshandler import APIExceptionHandler
 
-app = FastAPI()
+from pydantic import ValidationError
+app.add_exception_handler(ValidationError, APIExceptionHandler.unhandled)
+
+from fastapi.exceptions import RequestValidationError
+app.add_exception_handler(RequestValidationError, APIExceptionHandler.unhandled)
 
 @app.get("/")
 def read_root():
-    try:
-        return 1/0
-    except Exception as exc:
-        return await APIExceptionHandler.unhandled(exc)
+    return 1/0
 
 ```
-</details>
 
-
-Create a custom exception class and error code, then 
 
 ### Run it
 
@@ -77,39 +53,35 @@ Browse to http://127.0.0.1:8000 you should see this json:
 
 ## Creating custom exceptions
 
-In order to create a custom exception you need to extend `APIException` and create an `Enum` class.
+In order to create a custom exception you need to extend `APIException` and `ErrorCodeBase` classes.
 
-**Note:** if you want to capture *only* `APIException` then use `APIExceptionManager(capture_unhandled=False)`
+**Note:** if you want to capture *only* `APIException` then don't send the `capture_unhandled` param, or set it to `False`
 
 ```python
-from enum import Enum
-
 from fastapi import FastAPI
 
-from fastapi_routesmanager import RouteManagersRegistry, ManagedAPIRouter
+from fastapi_exceptionshandler import APIExceptionMiddleware, APIException, ErrorCodeBase
 
-from fastapi_exceptionshandler import APIExceptionManager, APIException
+from starlette import status
 
-RouteManagersRegistry.register_route_manager(APIExceptionManager)  # Register manager
 
 app = FastAPI()
 
-router = ManagedAPIRouter()
+# Register the middleware
+app.add_middleware(APIExceptionMiddleware)
 
 
 class CustomException(APIException):
-    status_code = 401
+    status_code = status.HTTP_400_BAD_REQUEST
     
-    class ErrorCode(Enum):
-        CustomExceptionCode = "Custom Exception Message"
-
-
-@router.get("/")  # Use router instead of app
+    class ErrorCode(ErrorCodeBase):
+        CustomExceptionCode = "Custom Exception Message", status.HTTP_401_UNAUTHORIZED
+        CustomExceptionCodeWithDefaultStatusCode = "Custom Exception Message"
+        
+        
+@app.get("/")
 def read_root():
     raise CustomException(CustomException.ErrorCode.CustomExceptionCode)
-
-
-app.include_router(router)  # Include the router to the app
 
 ```
 
