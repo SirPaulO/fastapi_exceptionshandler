@@ -11,6 +11,15 @@ class ErrorCodeMixin:
     status_code: int | None = field(default=None)
     report_level: REPORT_LEVEL | None = field(default=None)
 
+    @property
+    def value(self) -> str:
+        return self.message
+
+
+@dataclass
+class ProxyErrorCode(ErrorCodeMixin):
+    name: str = field(default="ProxyError")
+
 
 # Base class to be extended
 class ErrorCodeBase(ErrorCodeMixin, Enum):
@@ -26,7 +35,11 @@ class APIException(ABC, Exception):
     class ErrorCode(ErrorCodeBase):
         InternalError = "Internal Server Error", 500, REPORT_LEVEL.IGNORE
 
-    def __init__(self, error_code: ErrorCodeBase = ErrorCode.InternalError, exc: Exception | None = None) -> None:
+    def __init__(
+        self,
+        error_code: ErrorCodeBase | ProxyErrorCode = ErrorCode.InternalError,
+        exc: Exception | None = None,
+    ) -> None:
         # Check not None status_code
         if getattr(error_code, "status_code", None) is None:
             error_code.status_code = self.status_code
