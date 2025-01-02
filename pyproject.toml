@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = 'fastapi_exceptionshandler'
-version = "0.1.1"
+version = "0.1.2"
 license = {text = "MIT License"}
 authors = [
   { name="SirPaulO", email="me@sirpauloliver.com" },

@@ -10,6 +10,7 @@ class ErrorCodeMixin:
     message: str
     status_code: int | None = field(default=None)
     report_level: REPORT_LEVEL | None = field(default=None)
+    ignore_handler: bool = field(default=False)
 
     @property
     def value(self) -> str:
@@ -30,10 +31,11 @@ class APIException(ABC, Exception):
     # Defaults
     status_code: int = 500
     report_level: REPORT_LEVEL = REPORT_LEVEL.IGNORE
+    ignore_handler: bool = False
 
     # Mapped error codes with their messages, status code and report level
     class ErrorCode(ErrorCodeBase):
-        InternalError = "Internal Server Error", 500, REPORT_LEVEL.IGNORE
+        InternalError = "Internal Server Error", 500, REPORT_LEVEL.IGNORE, False
 
     def __init__(
         self,
@@ -48,9 +50,14 @@ class APIException(ABC, Exception):
         if getattr(error_code, "report_level", None) is None:
             error_code.report_level = self.report_level
 
+        # Check not None ignore_handler
+        if getattr(error_code, "ignore_handler", None) is None:
+            error_code.ignore_handler = self.ignore_handler
+
         self._error_code = error_code
         self.status_code = error_code.status_code
         self.report_level = error_code.report_level
+        self.ignore_handler = error_code.ignore_handler
         self._exc = exc
 
     def __str__(self) -> str:
@@ -70,6 +77,9 @@ class APIException(ABC, Exception):
 
     def should_report(self) -> bool:
         return self.get_report_level() == REPORT_LEVEL.REPORT
+
+    def should_ignore_handler(self) -> bool:
+        return self.ignore_handler
 
 
 class APIError(APIException):

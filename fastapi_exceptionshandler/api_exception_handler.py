@@ -16,7 +16,11 @@ class APIExceptionHandler:
 
     @classmethod
     def handled(
-        cls, request: Request, exc: APIException, body_extra: Optional[Dict] = None, **kwargs: Any
+        cls,
+        request: Request,
+        exc: APIException,
+        body_extra: Optional[Dict] = None,
+        **kwargs: Any,
     ) -> JSONResponse:
         body_content = {
             cls.error_label: exc.get_error_code(),
@@ -33,7 +37,11 @@ class APIExceptionHandler:
 
     @classmethod
     def unhandled(
-        cls, request: Request, exc: Exception, body_extra: Optional[Dict] = None, **kwargs: Any
+        cls,
+        request: Request,
+        exc: Exception,
+        body_extra: Optional[Dict] = None,
+        **kwargs: Any,
     ) -> JSONResponse:
         api_exc = APIException(exc=exc)
         return cls.handled(request, api_exc, body_extra, **kwargs)
@@ -53,15 +61,17 @@ class APIExceptionHandler:
         if issubclass(type(exc), APIException):
             if log_error:
                 logger.error(str(exc))
+            if hasattr(exc, "should_ignore_handler") and exc.should_ignore_handler():
+                raise exc
             return APIExceptionHandler.handled(request, exc)  # type: ignore
 
         if log_error:
             logger.error(str(exc))
 
         if issubclass(type(exc), (RequestValidationError, ValidationError)) and not capture_validation:
-            raise
+            raise exc
 
         if not capture_unhandled:
-            raise
+            raise exc
 
         return APIExceptionHandler.unhandled(request, exc)
